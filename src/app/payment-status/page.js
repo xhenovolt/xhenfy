@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Swal from 'sweetalert2';
 
+export const dynamic = 'force-dynamic';
+
 export default function PaymentStatusPage() {
   const searchParams = useSearchParams();
   const reference = searchParams.get('ref');

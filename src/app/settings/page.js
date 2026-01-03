@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 
+export const dynamic = 'force-dynamic';
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState({});
   const [currency, setCurrency] = useState('UGX');
