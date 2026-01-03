@@ -332,7 +332,7 @@ export function PortalContent() {
             <div className="text-center text-gray-400 text-sm">
               <p>© 2026 Xhenfy Portal. All prices displayed in {currency}</p>
               <p className="mt-2 text-gray-500">
-                <span className="text-yellow-400">⚠️</span> This is a mock payment system. No real transactions are processed.
+                {/* <span className="text-yellow-400">⚠️</span> This is a mock payment system. No real transactions are processed. */}
               </p>
             </div>
           </div>
