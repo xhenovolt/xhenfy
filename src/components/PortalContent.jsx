@@ -5,9 +5,11 @@ import PlanModal from '@/components/PlanModal';
 
 // MunoPay payment links mapped by plan duration
 const PAYMENT_LINKS = {
-  daily: 'https://payments.munopay.com/pay?id=39c7080f218b5615',
-  weekly: 'https://payments.munopay.com/pay?id=5aed9cf7445246c1',
-  monthly: 'https://payments.munopay.com/pay?id=87533bd24d543fd7',
+  sixhours: 'https://payments.munopay.com/pay?id=cc0aecdd8f6feaf0',
+  halfday: 'https://payments.munopay.com/pay?id=02d4d3c9a3e35b77',
+  fullday: 'https://payments.munopay.com/pay?id=cd84cc71f1737213',
+  weekly: 'https://payments.munopay.com/pay?id=7492c89725593c84',
+  monthly: 'https://payments.munopay.com/pay?id=737ac12402df3586',
 };
 
 const mockSession = {
@@ -18,9 +20,11 @@ const mockSession = {
 
 // Fallback plans if API fails
 const FALLBACK_PLANS = [
-  { id: 1, name: 'Daily', price: '1000', duration_minutes: 1440 },
-  { id: 2, name: 'Weekly', price: '5000', duration_minutes: 10080 },
-  { id: 3, name: 'Monthly', price: '18000', duration_minutes: 43200 },
+  { id: 1, name: '6 Hours', price: '500', duration_minutes: 360 },
+  { id: 2, name: '12 Hours', price: '700', duration_minutes: 720 },
+  { id: 3, name: 'Full Day', price: '1000', duration_minutes: 1440 },
+  { id: 4, name: 'Weekly', price: '5500', duration_minutes: 10080 },
+  { id: 5, name: 'Monthly', price: '25000', duration_minutes: 43200 },
 ];
 
 export function PortalContent() {
@@ -91,10 +95,12 @@ export function PortalContent() {
   };
 
   const getPaymentLink = (plan) => {
-    if (plan.duration_minutes === 1440) return PAYMENT_LINKS.daily; // 24 hours
+    if (plan.duration_minutes === 360) return PAYMENT_LINKS.sixhours; // 6 hours
+    if (plan.duration_minutes === 720) return PAYMENT_LINKS.halfday; // 12 hours
+    if (plan.duration_minutes === 1440) return PAYMENT_LINKS.fullday; // 24 hours
     if (plan.duration_minutes === 10080) return PAYMENT_LINKS.weekly; // 7 days
     if (plan.duration_minutes === 43200) return PAYMENT_LINKS.monthly; // 30 days
-    return PAYMENT_LINKS.daily; // Default to daily
+    return PAYMENT_LINKS.fullday; // Default to full day
   };
 
   const openPlanModal = (plan) => {
@@ -201,7 +207,11 @@ export function PortalContent() {
                   <div className="mb-6 pb-6 border-b border-white border-opacity-10">
                     <p className="text-gray-400 text-sm mb-1">Duration</p>
                     <p className="text-2xl font-bold text-white">
-                      {plan.duration_minutes === 1440
+                      {plan.duration_minutes === 360
+                        ? '6 Hours'
+                        : plan.duration_minutes === 720
+                        ? '12 Hours'
+                        : plan.duration_minutes === 1440
                         ? '24 Hours'
                         : plan.duration_minutes === 10080
                         ? '7 Days'
@@ -220,16 +230,42 @@ export function PortalContent() {
 
                   {/* Features */}
                   <div className="space-y-3 mb-8">
-                    {plan.name === 'Daily' && (
+                    {plan.name === '6 Hours' && (
                       <>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Perfect for travelers
+                          <span className="text-green-400">✓</span> Quick browsing session
+                        </p>
+                        <p className="text-gray-300 flex items-center gap-2">
+                          <span className="text-green-400">✓</span> Affordable
+                        </p>
+                        <p className="text-gray-300 flex items-center gap-2">
+                          <span className="text-green-400">✓</span> Fast setup
+                        </p>
+                      </>
+                    )}
+                    {plan.name === '12 Hours' && (
+                      <>
+                        <p className="text-gray-300 flex items-center gap-2">
+                          <span className="text-green-400">✓</span> Perfect for half-day use
+                        </p>
+                        <p className="text-gray-300 flex items-center gap-2">
+                          <span className="text-green-400">✓</span> 40% savings vs hourly
                         </p>
                         <p className="text-gray-300 flex items-center gap-2">
                           <span className="text-green-400">✓</span> Flexible timing
                         </p>
+                      </>
+                    )}
+                    {plan.name === 'Full Day' && (
+                      <>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Quick setup
+                          <span className="text-green-400">✓</span> All-day internet access
+                        </p>
+                        <p className="text-gray-300 flex items-center gap-2">
+                          <span className="text-green-400">✓</span> Most popular plan
+                        </p>
+                        <p className="text-gray-300 flex items-center gap-2">
+                          <span className="text-green-400">✓</span> Unlimited downloads
                         </p>
                       </>
                     )}
@@ -239,10 +275,10 @@ export function PortalContent() {
                           <span className="text-green-400">✓</span> Best for short stays
                         </p>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> 20% savings
+                          <span className="text-green-400">✓</span> 30% savings
                         </p>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Reliable connection
+                          <span className="text-green-400">✓</span> Priority support
                         </p>
                       </>
                     )}
@@ -252,10 +288,10 @@ export function PortalContent() {
                           <span className="text-green-400">✓</span> Best value
                         </p>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> 40% savings
+                          <span className="text-green-400">✓</span> 45% savings
                         </p>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Priority support
+                          <span className="text-green-400">✓</span> 24/7 premium support
                         </p>
                       </>
                     )}

@@ -4,10 +4,10 @@
  */
 
 export const MUNOPAY_CONFIG = {
-  // API endpoint for payment initiation
-  apiEndpoint: process.env.MUNOPAY_API_URL || 'https://api.munopay.com/v1/payments',
+  // API endpoint for payment initiation (correct endpoint from MunoPay docs)
+  apiEndpoint: process.env.MUNOPAY_API_URL || 'https://payments.munopay.com/api/v1/deposit',
   
-  // API key for authorization
+  // API key for authorization (API Secret Key)
   apiKey: process.env.MUNOPAY_API_KEY,
   
   // Webhook secret for signature verification

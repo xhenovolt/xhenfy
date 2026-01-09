@@ -53,12 +53,13 @@ export function verifyWebhookSignature(payload, signature, secret) {
  */
 export function prepareMunoPayPayload(phone, amount, reference) {
   return {
-    phone: phone,
-    amount: Math.round(amount), // Ensure integer
+    account_number: '0100123456789', // Required by MunoPay API
     reference: reference,
-    narration: `Payment for internet access - ${new Date().toISOString()}`,
-    // MunoPay will trigger STK push on customer's phone
-    // No customer_email or additional fields needed for STK push
+    phone: phone,
+    amount: parseFloat(amount), // MunoPay expects decimal
+    description: `Xhenfy Portal - Wi-Fi Access Payment`,
+    email: 'portal@xhenfy.local',
+    names: 'Portal User',
   };
 }
 

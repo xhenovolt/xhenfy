@@ -67,33 +67,21 @@ export async function POST(request) {
     }
 
     // Verify user exists
-    let user;
-    try {
-      user = await getUserById(user_id);
-      if (!user) {
-        return Response.json(
-          formatErrorResponse('User not found', 'USER_NOT_FOUND'),
-          { status: 404 }
-        );
-      }
-    } catch (dbError) {
-      console.error('Error fetching user:', dbError);
-      throw new Error(`Database error getting user: ${dbError.message}`);
+    const user = await getUserById(user_id);
+    if (!user) {
+      return Response.json(
+        formatErrorResponse('User not found', 'USER_NOT_FOUND'),
+        { status: 404 }
+      );
     }
 
     // Get plan details
-    let plan;
-    try {
-      plan = await getPlanById(plan_id);
-      if (!plan) {
-        return Response.json(
-          formatErrorResponse('Plan not found or inactive', 'PLAN_NOT_FOUND'),
-          { status: 404 }
-        );
-      }
-    } catch (dbError) {
-      console.error('Error fetching plan:', dbError);
-      throw new Error(`Database error getting plan: ${dbError.message}`);
+    const plan = await getPlanById(plan_id);
+    if (!plan) {
+      return Response.json(
+        formatErrorResponse('Plan not found or inactive', 'PLAN_NOT_FOUND'),
+        { status: 404 }
+      );
     }
 
     // Generate unique transaction reference
@@ -106,39 +94,19 @@ export async function POST(request) {
       transactionRef
     );
 
-    console.log('Creating transaction with:', {
+    // Create pending transaction in database first
+    const transaction = await createTransaction({
       reference: transactionRef,
       user_id,
       plan_id,
       amount: plan.price,
       phone: formattedPhone,
+      session_id,
     });
-
-    // Create pending transaction in database first
-    let transaction;
-    try {
-      transaction = await createTransaction({
-        reference: transactionRef,
-        user_id,
-        plan_id,
-        amount: plan.price,
-        phone: formattedPhone,
-        session_id,
-      });
-      console.log('Transaction created:', transaction);
-    } catch (dbError) {
-      console.error('Error creating transaction:', dbError);
-      throw new Error(`Database error creating transaction: ${dbError.message}`);
-    }
 
     // Call MunoPay API
     let munoPayResponse;
     try {
-      console.log('Calling MunoPay API:', {
-        endpoint: MUNOPAY_CONFIG.apiEndpoint,
-        payload: munoPayPayload,
-      });
-
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), MUNOPAY_CONFIG.requestTimeout);
 
@@ -151,48 +119,26 @@ export async function POST(request) {
 
       clearTimeout(timeoutId);
 
-      console.log('MunoPay response status:', response.status);
-
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('MunoPay API error response:', errorText);
-        
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { message: errorText };
-        }
-        
+        const errorData = await response.json().catch(() => ({}));
+        console.error('MunoPay API error:', errorData);
         throw new Error(
           errorData.message || `MunoPay API returned ${response.status}`
         );
       }
 
       munoPayResponse = await response.json();
-      console.log('MunoPay response:', munoPayResponse);
     } catch (error) {
       // Log error but don't expose sensitive details to client
       console.error('MunoPay request failed:', error.message);
-      console.error('Error details:', error);
       
-      // For development: Return success with mock response if MunoPay fails
-      // This allows testing the rest of the flow
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Using mock MunoPay response for development');
-        munoPayResponse = {
-          request_id: 'mock_' + transactionRef,
-          id: 'mock_id_' + Date.now(),
-        };
-      } else {
-        return Response.json(
-          formatErrorResponse(
-            'Payment initiation failed. Please try again.',
-            'MUNOPAY_REQUEST_FAILED'
-          ),
-          { status: 503 }
-        );
-      }
+      return Response.json(
+        formatErrorResponse(
+          'Payment initiation failed. Please try again.',
+          'MUNOPAY_REQUEST_FAILED'
+        ),
+        { status: 503 }
+      );
     }
 
     // Return success response with minimal sensitive data
@@ -211,10 +157,9 @@ export async function POST(request) {
     );
   } catch (error) {
     console.error('Payment initiation error:', error);
-    console.error('Error stack:', error.stack);
     return Response.json(
       formatErrorResponse(
-        error.message || 'An unexpected error occurred while processing your payment',
+        'An unexpected error occurred while processing your payment',
         'INTERNAL_ERROR'
       ),
       { status: 500 }
