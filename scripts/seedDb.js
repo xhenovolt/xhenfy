@@ -13,13 +13,13 @@ async function seedDatabase() {
   try {
     console.log('Seeding database with default data...');
 
-    // Clear existing data (optional, comment out if you don't want to clear)
-    // await client.query('DELETE FROM payments;');
-    // await client.query('DELETE FROM sessions;');
-    // await client.query('DELETE FROM users;');
-    // await client.query('DELETE FROM plans;');
-    // await client.query('DELETE FROM devices;');
-    // await client.query('DELETE FROM settings;');
+    // Clear existing data to reset (remove foreign key dependencies first)
+    await client.query('DELETE FROM transactions;');
+    await client.query('DELETE FROM wifi_sessions;');
+    await client.query('DELETE FROM payments;');
+    await client.query('DELETE FROM sessions;');
+    await client.query('DELETE FROM plans;');
+    console.log('✓ Old data cleared');
 
     // Insert default plans
     const plansResult = await client.query(

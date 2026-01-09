@@ -53,7 +53,7 @@ export function verifyWebhookSignature(payload, signature, secret) {
  */
 export function prepareMunoPayPayload(phone, amount, reference) {
   return {
-    account_number: '0100123456789', // Required by MunoPay API
+    account_number: '01004449855656', // Required by MunoPay API (must match merchant account)
     reference: reference,
     phone: phone,
     amount: parseFloat(amount), // MunoPay expects decimal
