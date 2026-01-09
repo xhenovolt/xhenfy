@@ -107,6 +107,10 @@ export async function POST(request) {
     // Call MunoPay API
     let munoPayResponse;
     try {
+      console.log('🔍 Calling MunoPay API...');
+      console.log('📤 Payload:', munoPayPayload);
+      console.log('API Endpoint:', MUNOPAY_CONFIG.apiEndpoint);
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), MUNOPAY_CONFIG.requestTimeout);
 
@@ -119,18 +123,43 @@ export async function POST(request) {
 
       clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('MunoPay API error:', errorData);
-        throw new Error(
-          errorData.message || `MunoPay API returned ${response.status}`
+      console.log('📍 MunoPay Response Status:', response.status);
+
+      // Parse response text first
+      const responseText = await response.text();
+      console.log('📄 Raw Response:', responseText.substring(0, 500));
+
+      // Try to parse as JSON
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (e) {
+        console.error('❌ Failed to parse JSON:', e.message);
+        console.error('Response was:', responseText.substring(0, 200));
+        
+        return Response.json(
+          formatErrorResponse(
+            'Invalid response from payment provider. Please try again.',
+            'INVALID_RESPONSE'
+          ),
+          { status: 503 }
         );
       }
 
-      munoPayResponse = await response.json();
+      // Check if response was successful
+      if (!response.ok) {
+        console.error('❌ MunoPay API Error:', responseData);
+        throw new Error(
+          responseData.message || `MunoPay API returned ${response.status}`
+        );
+      }
+
+      munoPayResponse = responseData;
+      console.log('✅ MunoPay Success:', munoPayResponse);
     } catch (error) {
       // Log error but don't expose sensitive details to client
-      console.error('MunoPay request failed:', error.message);
+      console.error('❌ MunoPay request failed:', error.message);
+      console.error('Error type:', error.name);
       
       return Response.json(
         formatErrorResponse(
