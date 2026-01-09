@@ -3,32 +3,115 @@
 import { useState, useEffect } from 'react';
 import PlanModal from '@/components/PlanModal';
 
-// MunoPay payment links mapped by plan duration
-const PAYMENT_LINKS = {
-  sixhours: 'https://payments.munopay.com/pay?id=cc0aecdd8f6feaf0',
-  halfday: 'https://payments.munopay.com/pay?id=02d4d3c9a3e35b77',
-  fullday: 'https://payments.munopay.com/pay?id=cd84cc71f1737213',
-  weekly: 'https://payments.munopay.com/pay?id=7492c89725593c84',
-  monthly: 'https://payments.munopay.com/pay?id=737ac12402df3586',
-};
+// Fallback plans if API fails
+const FALLBACK_PLANS = [
+  { id: 1, name: '1 Hour', price: 500, duration_minutes: 60, currency: 'UGX' },
+  { id: 2, name: '6 Hours', price: 600, duration_minutes: 360, currency: 'UGX' },
+  { id: 3, name: '12 Hours', price: 700, duration_minutes: 720, currency: 'UGX' },
+  { id: 4, name: 'Weekly', price: 5500, duration_minutes: 10080, currency: 'UGX' },
+  { id: 5, name: 'Monthly', price: 25000, duration_minutes: 43200, currency: 'UGX' },
+];
 
 const mockSession = {
-  expiryTime: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+  expiryTime: new Date(Date.now() + 24 * 60 * 60 * 1000),
   macAddress: 'AA:BB:CC:DD:EE:FF',
   ipAddress: '192.168.1.100',
 };
 
-// Fallback plans if API fails
-const FALLBACK_PLANS = [
-  { id: 1, name: '1 Hour', price: '500', duration_minutes: 60 },
-  { id: 2, name: '3 Hours', price: '500', duration_minutes: 180 },
-  { id: 3, name: '6 Hours', price: '500', duration_minutes: 360 },
-  { id: 4, name: '12 Hours', price: '700', duration_minutes: 720 },
-  { id: 5, name: 'Daily', price: '1000', duration_minutes: 1440 },
-  { id: 6, name: 'Weekly', price: '5000', duration_minutes: 10080 },
-  { id: 7, name: 'Monthly', price: '18000', duration_minutes: 43200 },
-];
+/**
+ * Plan Card Component
+ */
+function PlanCard({ plan, isPopular, onSelect }) {
+  const formatDuration = (minutes) => {
+    if (minutes < 60) return `${minutes}m`;
+    if (minutes < 1440) return `${Math.floor(minutes / 60)}h`;
+    if (minutes < 10080) return `${Math.floor(minutes / 1440)}d`;
+    if (minutes < 43200) return `${Math.floor(minutes / 10080)}w`;
+    return `${Math.floor(minutes / 43200)}mo`;
+  };
 
+  const getFeatures = () => {
+    const commonFeatures = ['Fast speeds', 'Instant activation', 'Secure payment'];
+    const durationFeatures = {
+      '1 Hour': ['Perfect for quick browsing'],
+      '6 Hours': ['Stream videos', 'Work sessions'],
+      '12 Hours': ['Extended usage', 'Better value'],
+      'Weekly': ['Full week access', 'Save 30%'],
+      'Monthly': ['Unlimited access', 'Save 45%'],
+    };
+    return [...commonFeatures, ...(durationFeatures[plan.name] || [])];
+  };
+
+  return (
+    <div
+      className={`relative rounded-2xl transition-all duration-300 hover:shadow-xl ${
+        isPopular
+          ? 'ring-2 ring-blue-500 dark:ring-blue-400 scale-105 shadow-lg dark:shadow-blue-900/30 md:col-span-2 lg:col-span-1'
+          : 'shadow-sm dark:shadow-slate-900/50'
+      } bg-white dark:bg-slate-800`}
+    >
+      {isPopular && (
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 text-white px-4 py-1 rounded-full text-xs font-semibold whitespace-nowrap">
+          🏆 Best Value
+        </div>
+      )}
+
+      <div className="p-6 md:p-8">
+        {/* Plan Name and Duration */}
+        <div className="mb-4">
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            {plan.name}
+          </h3>
+          <div className="inline-block px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium">
+            {formatDuration(plan.duration_minutes)}
+          </div>
+        </div>
+
+        {/* Price */}
+        <div className="my-8 pb-8 border-b-2 border-gray-100 dark:border-slate-700">
+          <div className="flex items-baseline gap-2">
+            <span className="text-5xl font-bold text-gray-900 dark:text-white">
+              {typeof plan.price === 'number' ? plan.price.toLocaleString() : plan.price}
+            </span>
+            <span className="text-gray-600 dark:text-gray-400 font-semibold text-lg">
+              {plan.currency || 'UGX'}
+            </span>
+          </div>
+        </div>
+
+        {/* Features */}
+        <div className="mb-8 space-y-3">
+          {getFeatures().map((feature, idx) => (
+            <div key={idx} className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-green-500 dark:text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span className="text-gray-700 dark:text-gray-300 text-sm font-medium">
+                {feature}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA Button */}
+        <button
+          onClick={() => onSelect(plan)}
+          className={`w-full py-3 px-4 rounded-xl font-bold transition-all duration-200 text-center ${
+            isPopular
+              ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-blue-400 dark:to-blue-500 dark:hover:from-blue-500 dark:hover:to-blue-600 text-white shadow-md hover:shadow-lg active:scale-95'
+              : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-900 dark:text-white border border-gray-200 dark:border-slate-600 active:scale-95'
+          }`}
+        >
+          Get {plan.name} Access
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Main Portal Component
+ */
 export function PortalContent() {
   const [plans, setPlans] = useState([]);
   const [currency, setCurrency] = useState('UGX');
@@ -36,19 +119,28 @@ export function PortalContent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sessionTime, setSessionTime] = useState('');
-  const [activeTab, setActiveTab] = useState('hourly'); // 'hourly' or 'long'
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
+    // Detect system dark mode preference
+    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setIsDarkMode(isDark);
+
+    // Update the HTML element
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+
     fetchData();
-    const timer = setInterval(() => {
-      updateSessionTime();
-    }, 1000);
+    const timer = setInterval(updateSessionTime, 1000);
+
     return () => clearInterval(timer);
   }, []);
 
   const fetchData = async () => {
     try {
-      // Fetch plans and settings in parallel
       const [plansRes, settingsRes] = await Promise.all([
         fetch('/api/plans').catch(() => ({ ok: false })),
         fetch('/api/settings').catch(() => ({ ok: false })),
@@ -83,358 +175,196 @@ export function PortalContent() {
 
   const updateSessionTime = () => {
     const now = new Date();
-    const timeDiff = mockSession.expiryTime - now;
-
-    if (timeDiff <= 0) {
-      setSessionTime('Session Expired');
-      return;
-    }
-
-    const hours = Math.floor(timeDiff / (1000 * 60 * 60));
-    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-
-    setSessionTime(`${hours}h ${minutes}m ${seconds}s`);
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    setSessionTime(`${hours}:${minutes}:${seconds}`);
   };
 
-  const getPaymentLink = (plan) => {
-    if (plan.duration_minutes === 360) return PAYMENT_LINKS.sixhours; // 6 hours
-    if (plan.duration_minutes === 720) return PAYMENT_LINKS.halfday; // 12 hours
-    if (plan.duration_minutes === 1440) return PAYMENT_LINKS.fullday; // 24 hours
-    if (plan.duration_minutes === 10080) return PAYMENT_LINKS.weekly; // 7 days
-    if (plan.duration_minutes === 43200) return PAYMENT_LINKS.monthly; // 30 days
-    return PAYMENT_LINKS.fullday; // Default to full day
-  };
-
-  const openPlanModal = (plan) => {
+  const handleSelectPlan = (plan) => {
     setSelectedPlan(plan);
     setIsModalOpen(true);
   };
 
-  const closePlanModal = () => {
+  const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedPlan(null);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
-          <p className="text-white text-lg font-medium">Loading Portal...</p>
-        </div>
-      </div>
-    );
-  }
+  const popularPlanId = plans.find(p => p.name === 'Monthly')?.id;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-      <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-      <div className="absolute -bottom-8 left-1/2 w-96 h-96 bg-pink-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
-
-      <div className="relative z-10">
-        {/* Header */}
-        <header className="bg-black bg-opacity-30 backdrop-blur-md border-b border-white border-opacity-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">Xhenfy Portal</h1>
-                <p className="text-gray-300">Fast, Reliable WiFi Access</p>
+    <div className={`min-h-screen transition-colors duration-300 ${
+      isDarkMode
+        ? 'dark bg-slate-950'
+        : 'bg-gradient-to-br from-slate-50 to-slate-100'
+    }`}>
+      {/* Header */}
+      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${
+        isDarkMode
+          ? 'dark bg-slate-900/80 border-slate-800'
+          : 'bg-white/80 border-slate-200'
+      }`}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                isDarkMode ? 'dark bg-blue-900/30' : 'bg-blue-100'
+              }`}>
+                <svg className="w-6 h-6 text-blue-500 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M17.778 8.222c-4.296-4.296-11.26-4.296-15.556 0A1 1 0 01.808 6.808c4.296-4.295 11.26-4.295 15.556 0a1 1 0 01-1.414 1.414zM14.95 11.05a7 7 0 00-9.9 0 1 1 0 01-1.414-1.414 9 9 0 0112.728 0 1 1 0 01-1.414 1.414zM12.12 13.88a3 3 0 00-4.242 0 1 1 0 01-1.415-1.415 5 5 0 017.072 0 1 1 0 01-1.415 1.415zM9 16a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
+                </svg>
               </div>
-              <a
-                href="/settings"
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition transform hover:scale-105 flex items-center gap-2"
-              >
-                <span>⚙️</span>
-                Settings
-              </a>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Xhenfy WiFi</h1>
+                <p className={`text-xs font-medium ${isDarkMode ? 'dark text-gray-400' : 'text-gray-600'}`}>
+                  Fast. Reliable. Secure.
+                </p>
+              </div>
             </div>
-          </div>
-        </header>
-
-        {/* Session Info Bar */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-700 border-b border-white border-opacity-10 px-4 sm:px-6 lg:px-8 py-4">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <p className="text-gray-400">Session Expiry</p>
-                <p className="text-white font-semibold">{sessionTime}</p>
-              </div>
-              <div>
-                <p className="text-gray-400">MAC Address</p>
-                <p className="text-white font-mono text-xs sm:text-sm">{mockSession.macAddress}</p>
-              </div>
-              <div>
-                <p className="text-gray-400">IP Address</p>
-                <p className="text-white font-mono text-xs sm:text-sm">{mockSession.ipAddress}</p>
-              </div>
-              <div>
-                <p className="text-gray-400">Currency</p>
-                <p className="text-white font-semibold">{currency}</p>
-              </div>
+            <div className={`text-sm font-bold tabular-nums ${isDarkMode ? 'dark text-blue-300' : 'text-blue-600'}`}>
+              {sessionTime}
             </div>
           </div>
         </div>
+      </header>
 
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Welcome Section */}
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-              Welcome to Xhenfy WiFi
-            </h2>
-            <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
-              Choose your plan and get instant access to high-speed internet. No hidden charges,
-              transparent pricing.
-            </p>
-          </div>
+      {/* Main Content */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+        {/* Hero Section */}
+        <section className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight text-gray-900 dark:text-white">
+            <span className="bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 bg-clip-text text-transparent">
+              Stay Connected
+            </span>
+            <br />
+            <span className="text-gray-800 dark:text-gray-100">Choose Your Plan</span>
+          </h2>
+          <p className={`text-lg md:text-xl max-w-2xl mx-auto ${
+            isDarkMode ? 'dark text-gray-300' : 'text-gray-700'
+          }`}>
+            Instant access with secure Mobile Money payment. No hidden fees, transparent pricing.
+          </p>
+        </section>
 
-          {/* Tab Navigation */}
-          <div className="flex justify-center mb-8">
-            <div className="inline-flex rounded-lg border border-white border-opacity-20 bg-slate-800 bg-opacity-50 p-1">
-              <button
-                onClick={() => setActiveTab('hourly')}
-                className={`px-6 py-2 rounded-lg font-semibold transition ${
-                  activeTab === 'hourly'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:text-white'
-                }`}
-              >
-                Hourly Plans
-              </button>
-              <button
-                onClick={() => setActiveTab('long')}
-                className={`px-6 py-2 rounded-lg font-semibold transition ${
-                  activeTab === 'long'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:text-white'
-                }`}
-              >
-                Long-term Plans
-              </button>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-20">
+            <div className={`flex flex-col items-center gap-3 ${isDarkMode ? 'dark text-blue-400' : 'text-blue-500'}`}>
+              <svg className="w-8 h-8 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span className="font-medium">Loading plans...</span>
             </div>
           </div>
+        )}
 
-          {/* Plans Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-12">
-            {plans
-              .filter((plan) => {
-                if (activeTab === 'hourly') {
-                  return plan.duration_minutes <= 720; // 1, 3, 6, 12 hours
-                } else {
-                  return plan.duration_minutes > 720; // Daily and above
-                }
-              })
-              .map((plan) => (
-              <div
+        {/* Plans Grid */}
+        {!loading && plans.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-16">
+            {plans.map((plan) => (
+              <PlanCard
                 key={plan.id}
-                className="group bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl border border-white border-opacity-10 overflow-hidden hover:border-opacity-30 transition duration-300 transform hover:scale-105 hover:shadow-2xl"
-              >
-                {/* Plan Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8">
-                  <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                  <p className="text-blue-100 text-sm">Uninterrupted Access</p>
-                </div>
-
-                {/* Plan Body */}
-                <div className="px-6 py-8">
-                  {/* Duration */}
-                  <div className="mb-6 pb-6 border-b border-white border-opacity-10">
-                    <p className="text-gray-400 text-sm mb-1">Duration</p>
-                    <p className="text-2xl font-bold text-white">{plan.name}</p>
-                  </div>
-
-                  {/* Price */}
-                  <div className="mb-8">
-                    <p className="text-gray-400 text-sm mb-2">Price</p>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-bold text-white">{plan.price}</span>
-                      <span className="text-xl text-gray-300 font-semibold">{currency}</span>
-                    </div>
-                  </div>
-
-                  {/* Features */}
-                  <div className="space-y-3 mb-8">
-                    {plan.name === '1 Hour' && (
-                      <>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Quick browsing
-                        </p>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Instant access
-                        </p>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Mobile friendly
-                        </p>
-                      </>
-                    )}
-                    {plan.name === '3 Hours' && (
-                      <>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Stream videos
-                        </p>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Work sessions
-                        </p>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Best for travelers
-                        </p>
-                      </>
-                    )}
-                    {plan.name === '6 Hours' && (
-                      <>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Full day browsing
-                        </p>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Download files
-                        </p>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Most flexible
-                        </p>
-                      </>
-                    )}
-                    {plan.name === '12 Hours' && (
-                      <>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Extended access
-                        </p>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> 40% savings
-                        </p>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Better value
-                        </p>
-                      </>
-                    )}
-                    {plan.name === 'Daily' && (
-                      <>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Full 24-hour access
-                        </p>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Most popular
-                        </p>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> No limits
-                        </p>
-                      </>
-                    )}
-                    {plan.name === 'Weekly' && (
-                      <>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Full week access
-                        </p>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> 30% savings
-                        </p>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Priority support
-                        </p>
-                      </>
-                    )}
-                    {plan.name === 'Monthly' && (
-                      <>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Unlimited access
-                        </p>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> 45% savings
-                        </p>
-                        <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> VIP support
-                        </p>
-                      </>
-                    )}
-                  </div>
-
-                  {/* CTA Buttons */}
-                  <div className="space-y-3">
-                    <button
-                      onClick={() => openPlanModal(plan)}
-                      className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-lg transition duration-300 transform hover:shadow-lg active:scale-95 flex items-center justify-center gap-2"
-                    >
-                      <span>🚀</span>
-                      Get {plan.name}
-                    </button>
-                    <a
-                      href={getPaymentLink(plan)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-lg transition duration-300 transform hover:shadow-lg active:scale-95 flex items-center justify-center gap-2 text-center"
-                    >
-                      <span>💳</span>
-                      Pay Now
-                    </a>
-                  </div>
-                </div>
-              </div>
+                plan={plan}
+                isPopular={plan.id === popularPlanId}
+                onSelect={handleSelectPlan}
+              />
             ))}
           </div>
+        )}
 
-          {/* Info Section */}
-          <div className="bg-gradient-to-r from-blue-900 to-purple-900 bg-opacity-30 border border-white border-opacity-10 rounded-xl p-8 backdrop-blur-md">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <h4 className="text-xl font-bold text-white mb-4">Why Xhenfy?</h4>
-                <ul className="space-y-3 text-gray-300">
-                  <li className="flex items-start gap-3">
-                    <span className="text-blue-400 text-xl mt-1">⚡</span>
-                    <span>Ultra-fast fiber optic connection</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-blue-400 text-xl mt-1">🔒</span>
-                    <span>Secure encrypted connections</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-blue-400 text-xl mt-1">🌐</span>
-                    <span>24/7 technical support</span>
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="text-xl font-bold text-white mb-4">Quick Setup</h4>
-                <ol className="space-y-3 text-gray-300">
-                  <li className="flex items-start gap-3">
-                    <span className="font-bold text-blue-400">1.</span>
-                    <span>Select your preferred plan</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="font-bold text-blue-400">2.</span>
-                    <span>Enter your phone number</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="font-bold text-blue-400">3.</span>
-                    <span>Complete payment and enjoy WiFi</span>
-                  </li>
-                </ol>
-              </div>
-            </div>
+        {/* Empty State */}
+        {!loading && plans.length === 0 && (
+          <div className="text-center py-12">
+            <svg className={`w-16 h-16 mx-auto mb-4 ${isDarkMode ? 'dark text-gray-600' : 'text-gray-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className={`text-lg ${isDarkMode ? 'dark text-gray-400' : 'text-gray-600'}`}>
+              No plans available
+            </p>
           </div>
-        </main>
+        )}
 
-        {/* Footer */}
-        <footer className="bg-black bg-opacity-40 backdrop-blur-md border-t border-white border-opacity-10 mt-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="text-center text-gray-400 text-sm">
-              <p>© 2026 Xhenfy Portal. All prices displayed in {currency}</p>
-              <p className="mt-2 text-gray-500">
-                {/* <span className="text-yellow-400">⚠️</span> This is a mock payment system. No real transactions are processed. */}
+        {/* Trust Section */}
+        <section className={`rounded-2xl p-8 md:p-12 border transition-colors ${
+          isDarkMode
+            ? 'dark bg-slate-800 border-slate-700'
+            : 'bg-white border-slate-200'
+        }`}>
+          <h3 className="text-2xl md:text-3xl font-bold mb-12 text-center text-gray-900 dark:text-white">
+            Why Choose Xhenfy?
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+            {/* Trust Item 1 */}
+            <div className="text-center">
+              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 ${
+                isDarkMode ? 'dark bg-green-900/30' : 'bg-green-100'
+              }`}>
+                <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Secure Payment</h4>
+              <p className={`text-sm ${isDarkMode ? 'dark text-gray-400' : 'text-gray-600'}`}>
+                All payments encrypted with Mobile Money
+              </p>
+            </div>
+
+            {/* Trust Item 2 */}
+            <div className="text-center">
+              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 ${
+                isDarkMode ? 'dark bg-blue-900/30' : 'bg-blue-100'
+              }`}>
+                <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Instant Access</h4>
+              <p className={`text-sm ${isDarkMode ? 'dark text-gray-400' : 'text-gray-600'}`}>
+                Immediate activation after payment
+              </p>
+            </div>
+
+            {/* Trust Item 3 */}
+            <div className="text-center">
+              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 ${
+                isDarkMode ? 'dark bg-purple-900/30' : 'bg-purple-100'
+              }`}>
+                <svg className="w-8 h-8 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">24/7 Support</h4>
+              <p className={`text-sm ${isDarkMode ? 'dark text-gray-400' : 'text-gray-600'}`}>
+                Always here to help when you need us
               </p>
             </div>
           </div>
-        </footer>
-      </div>
+        </section>
+      </main>
 
-      {/* Plan Modal */}
-      <PlanModal
-        isOpen={isModalOpen}
-        onClose={closePlanModal}
-        plan={selectedPlan}
-        currency={currency}
-      />
+      {/* Footer */}
+      <footer className={`mt-20 border-t transition-colors ${
+        isDarkMode
+          ? 'dark border-slate-800 bg-slate-900/50'
+          : 'border-slate-200 bg-white/50'
+      }`}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
+          <p className={`text-sm ${isDarkMode ? 'dark text-gray-500' : 'text-gray-600'}`}>
+            © 2026 Xhenfy WiFi Portal. Fast. Reliable. Secure.
+          </p>
+        </div>
+      </footer>
+
+      {/* Modal */}
+      {isModalOpen && selectedPlan && (
+        <PlanModal
+          plan={selectedPlan}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        />
+      )}
     </div>
   );
 }
