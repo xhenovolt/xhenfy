@@ -20,11 +20,13 @@ const mockSession = {
 
 // Fallback plans if API fails
 const FALLBACK_PLANS = [
-  { id: 1, name: '6 Hours', price: '500', duration_minutes: 360 },
-  { id: 2, name: '12 Hours', price: '700', duration_minutes: 720 },
-  { id: 3, name: 'Full Day', price: '1000', duration_minutes: 1440 },
-  { id: 4, name: 'Weekly', price: '5500', duration_minutes: 10080 },
-  { id: 5, name: 'Monthly', price: '25000', duration_minutes: 43200 },
+  { id: 1, name: '1 Hour', price: '300', duration_minutes: 60 },
+  { id: 2, name: '3 Hours', price: '400', duration_minutes: 180 },
+  { id: 3, name: '6 Hours', price: '500', duration_minutes: 360 },
+  { id: 4, name: '12 Hours', price: '700', duration_minutes: 720 },
+  { id: 5, name: 'Daily', price: '1000', duration_minutes: 1440 },
+  { id: 6, name: 'Weekly', price: '5000', duration_minutes: 10080 },
+  { id: 7, name: 'Monthly', price: '18000', duration_minutes: 43200 },
 ];
 
 export function PortalContent() {
@@ -34,6 +36,7 @@ export function PortalContent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sessionTime, setSessionTime] = useState('');
+  const [activeTab, setActiveTab] = useState('hourly'); // 'hourly' or 'long'
 
   useEffect(() => {
     fetchData();
@@ -188,9 +191,43 @@ export function PortalContent() {
             </p>
           </div>
 
+          {/* Tab Navigation */}
+          <div className="flex justify-center mb-8">
+            <div className="inline-flex rounded-lg border border-white border-opacity-20 bg-slate-800 bg-opacity-50 p-1">
+              <button
+                onClick={() => setActiveTab('hourly')}
+                className={`px-6 py-2 rounded-lg font-semibold transition ${
+                  activeTab === 'hourly'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-300 hover:text-white'
+                }`}
+              >
+                Hourly Plans
+              </button>
+              <button
+                onClick={() => setActiveTab('long')}
+                className={`px-6 py-2 rounded-lg font-semibold transition ${
+                  activeTab === 'long'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-300 hover:text-white'
+                }`}
+              >
+                Long-term Plans
+              </button>
+            </div>
+          </div>
+
           {/* Plans Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 mb-12">
-            {plans.map((plan) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-12">
+            {plans
+              .filter((plan) => {
+                if (activeTab === 'hourly') {
+                  return plan.duration_minutes <= 720; // 1, 3, 6, 12 hours
+                } else {
+                  return plan.duration_minutes > 720; // Daily and above
+                }
+              })
+              .map((plan) => (
               <div
                 key={plan.id}
                 className="group bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl border border-white border-opacity-10 overflow-hidden hover:border-opacity-30 transition duration-300 transform hover:scale-105 hover:shadow-2xl"
@@ -206,17 +243,7 @@ export function PortalContent() {
                   {/* Duration */}
                   <div className="mb-6 pb-6 border-b border-white border-opacity-10">
                     <p className="text-gray-400 text-sm mb-1">Duration</p>
-                    <p className="text-2xl font-bold text-white">
-                      {plan.duration_minutes === 360
-                        ? '6 Hours'
-                        : plan.duration_minutes === 720
-                        ? '12 Hours'
-                        : plan.duration_minutes === 1440
-                        ? '24 Hours'
-                        : plan.duration_minutes === 10080
-                        ? '7 Days'
-                        : '30 Days'}
-                    </p>
+                    <p className="text-2xl font-bold text-white">{plan.name}</p>
                   </div>
 
                   {/* Price */}
@@ -230,49 +257,75 @@ export function PortalContent() {
 
                   {/* Features */}
                   <div className="space-y-3 mb-8">
+                    {plan.name === '1 Hour' && (
+                      <>
+                        <p className="text-gray-300 flex items-center gap-2">
+                          <span className="text-green-400">✓</span> Quick browsing
+                        </p>
+                        <p className="text-gray-300 flex items-center gap-2">
+                          <span className="text-green-400">✓</span> Instant access
+                        </p>
+                        <p className="text-gray-300 flex items-center gap-2">
+                          <span className="text-green-400">✓</span> Mobile friendly
+                        </p>
+                      </>
+                    )}
+                    {plan.name === '3 Hours' && (
+                      <>
+                        <p className="text-gray-300 flex items-center gap-2">
+                          <span className="text-green-400">✓</span> Stream videos
+                        </p>
+                        <p className="text-gray-300 flex items-center gap-2">
+                          <span className="text-green-400">✓</span> Work sessions
+                        </p>
+                        <p className="text-gray-300 flex items-center gap-2">
+                          <span className="text-green-400">✓</span> Best for travelers
+                        </p>
+                      </>
+                    )}
                     {plan.name === '6 Hours' && (
                       <>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Quick browsing session
+                          <span className="text-green-400">✓</span> Full day browsing
                         </p>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Affordable
+                          <span className="text-green-400">✓</span> Download files
                         </p>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Fast setup
+                          <span className="text-green-400">✓</span> Most flexible
                         </p>
                       </>
                     )}
                     {plan.name === '12 Hours' && (
                       <>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Perfect for half-day use
+                          <span className="text-green-400">✓</span> Extended access
                         </p>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> 40% savings vs hourly
+                          <span className="text-green-400">✓</span> 40% savings
                         </p>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Flexible timing
+                          <span className="text-green-400">✓</span> Better value
                         </p>
                       </>
                     )}
-                    {plan.name === 'Full Day' && (
+                    {plan.name === 'Daily' && (
                       <>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> All-day internet access
+                          <span className="text-green-400">✓</span> Full 24-hour access
                         </p>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Most popular plan
+                          <span className="text-green-400">✓</span> Most popular
                         </p>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Unlimited downloads
+                          <span className="text-green-400">✓</span> No limits
                         </p>
                       </>
                     )}
                     {plan.name === 'Weekly' && (
                       <>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Best for short stays
+                          <span className="text-green-400">✓</span> Full week access
                         </p>
                         <p className="text-gray-300 flex items-center gap-2">
                           <span className="text-green-400">✓</span> 30% savings
@@ -285,13 +338,13 @@ export function PortalContent() {
                     {plan.name === 'Monthly' && (
                       <>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> Best value
+                          <span className="text-green-400">✓</span> Unlimited access
                         </p>
                         <p className="text-gray-300 flex items-center gap-2">
                           <span className="text-green-400">✓</span> 45% savings
                         </p>
                         <p className="text-gray-300 flex items-center gap-2">
-                          <span className="text-green-400">✓</span> 24/7 premium support
+                          <span className="text-green-400">✓</span> VIP support
                         </p>
                       </>
                     )}

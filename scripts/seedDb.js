@@ -27,10 +27,18 @@ async function seedDatabase() {
        VALUES 
        ($1, $2, $3, $4, true),
        ($5, $6, $7, $8, true),
-       ($9, $10, $11, $12, true)
+       ($9, $10, $11, $12, true),
+       ($13, $14, $15, $16, true),
+       ($17, $18, $19, $20, true),
+       ($21, $22, $23, $24, true),
+       ($25, $26, $27, $28, true)
        ON CONFLICT DO NOTHING
        RETURNING id, name, price, currency;`,
       [
+        '1 Hour', 60, 300, 'UGX',
+        '3 Hours', 180, 400, 'UGX',
+        '6 Hours', 360, 500, 'UGX',
+        '12 Hours', 720, 700, 'UGX',
         'Daily', 1440, 1000, 'UGX',
         'Weekly', 10080, 5000, 'UGX',
         'Monthly', 43200, 18000, 'UGX'
