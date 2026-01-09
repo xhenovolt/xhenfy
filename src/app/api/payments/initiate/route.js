@@ -5,7 +5,6 @@ import {
   formatErrorResponse,
   formatSuccessResponse,
 } from '@/lib/payment';
-import { MUNOPAY_CONFIG, getMunoPayHeaders } from '@/config/munopay';
 import {
   createTransaction,
   getTransactionByReference,
@@ -107,27 +106,30 @@ export async function POST(request) {
     // Call MunoPay API
     let munoPayResponse;
     try {
+      // Get credentials from environment - same as test-munopay endpoint
+      const API_KEY = process.env.MUNOPAY_API_KEY || 'Mp_key-091143e30ba5c8d5c3bcfe924c1ebbb0-X';
+      const API_URL = process.env.MUNOPAY_API_URL || 'https://payments.munopay.com/api/v1/deposit';
+
       console.log('🔍 Calling MunoPay API...');
       console.log('📤 Payload:', munoPayPayload);
-      console.log('API Endpoint:', MUNOPAY_CONFIG.apiEndpoint);
+      console.log('API Endpoint:', API_URL);
+      console.log('API Key:', API_KEY.substring(0, 20) + '...');
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), MUNOPAY_CONFIG.requestTimeout);
-
-      const response = await fetch(MUNOPAY_CONFIG.apiEndpoint, {
+      // Make request to MunoPay (same approach as test-munopay)
+      const response = await fetch(API_URL, {
         method: 'POST',
-        headers: getMunoPayHeaders(),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_KEY}`,
+        },
         body: JSON.stringify(munoPayPayload),
-        signal: controller.signal,
       });
-
-      clearTimeout(timeoutId);
 
       console.log('📍 MunoPay Response Status:', response.status);
 
-      // Parse response text first
+      // Parse response text first (same as test-munopay)
       const responseText = await response.text();
-      console.log('📄 Raw Response:', responseText.substring(0, 500));
+      console.log('📄 Raw Response:', responseText);
 
       // Try to parse as JSON
       let responseData;
@@ -142,7 +144,7 @@ export async function POST(request) {
             'Invalid response from payment provider. Please try again.',
             'INVALID_RESPONSE'
           ),
-          { status: 503 }
+          { status: response.status }
         );
       }
 
@@ -150,7 +152,7 @@ export async function POST(request) {
       if (!response.ok) {
         console.error('❌ MunoPay API Error:', responseData);
         throw new Error(
-          responseData.message || `MunoPay API returned ${response.status}`
+          responseData.message || responseData.error || `MunoPay API returned ${response.status}`
         );
       }
 
@@ -160,6 +162,7 @@ export async function POST(request) {
       // Log error but don't expose sensitive details to client
       console.error('❌ MunoPay request failed:', error.message);
       console.error('Error type:', error.name);
+      console.error('Full error:', error.toString());
       
       return Response.json(
         formatErrorResponse(
