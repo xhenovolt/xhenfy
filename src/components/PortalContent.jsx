@@ -19,7 +19,29 @@ const mockSession = {
 };
 
 /**
- * Plan Card Component
+ * Feature Icon Component
+ */
+function FeatureIcon({ icon, label, title }) {
+  return (
+    <div className="group relative flex flex-col items-center gap-2">
+      <div className="text-2xl transition-transform group-hover:scale-110">
+        {icon}
+      </div>
+      <span className="text-xs text-center font-medium text-gray-700 dark:text-gray-300 line-clamp-2">
+        {label}
+      </span>
+      {title && (
+        <div className="invisible group-hover:visible absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-semibold rounded whitespace-nowrap z-10">
+          {title}
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-100"></div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Plan Card Component - Redesigned for clarity
  */
 function PlanCard({ plan, isPopular, onSelect }) {
   const formatDuration = (minutes) => {
@@ -30,77 +52,106 @@ function PlanCard({ plan, isPopular, onSelect }) {
     return `${Math.floor(minutes / 43200)}mo`;
   };
 
-  const getFeatures = () => {
-    const commonFeatures = ['Fast speeds', 'Instant activation', 'Secure payment'];
-    const durationFeatures = {
-      '1 Hour': ['Perfect for quick browsing'],
-      '6 Hours': ['Stream videos', 'Work sessions'],
-      '12 Hours': ['Extended usage', 'Better value'],
-      'Weekly': ['Full week access', 'Save 30%'],
-      'Monthly': ['Unlimited access', 'Save 45%'],
+  const getFeatureIcons = () => {
+    return [
+      { icon: '⚡', label: 'Fast Speeds', title: 'High-speed connection' },
+      { icon: '⏱️', label: 'Instant', title: 'Instant activation' },
+      { icon: '🔒', label: 'Secure', title: 'Secure payment' },
+    ];
+  };
+
+  const getPlanSummary = () => {
+    const summaries = {
+      '1 Hour': 'Quick\nbrowsing',
+      '6 Hours': 'Stream &\nwork',
+      '12 Hours': 'Extended\nusage',
+      'Weekly': 'Full week\naccess',
+      'Monthly': 'Unlimited\naccess',
     };
-    return [...commonFeatures, ...(durationFeatures[plan.name] || [])];
+    return summaries[plan.name] || 'Premium\nplan';
   };
 
   return (
     <div
-      className={`relative rounded-2xl transition-all duration-300 hover:shadow-xl ${
+      className={`relative rounded-2xl transition-all duration-300 ${
         isPopular
-          ? 'ring-2 ring-blue-500 dark:ring-blue-400 scale-105 shadow-lg dark:shadow-blue-900/30 md:col-span-2 lg:col-span-1'
-          : 'shadow-sm dark:shadow-slate-900/50'
-      } bg-white dark:bg-slate-800`}
+          ? 'ring-2 shadow-xl'
+          : 'shadow-sm hover:shadow-lg'
+      }`}
+      style={{
+        backgroundColor: 'var(--card-bg)',
+        borderColor: isPopular ? 'var(--primary-color)' : 'var(--card-border)',
+        borderWidth: isPopular ? '2px' : '1px',
+        transform: isPopular ? 'scale(1.02)' : 'scale(1)',
+      }}
     >
       {isPopular && (
-        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 text-white px-4 py-1 rounded-full text-xs font-semibold whitespace-nowrap">
+        <div
+          className="absolute -top-3 left-1/2 transform -translate-x-1/2 px-4 py-1 rounded-full text-xs font-semibold whitespace-nowrap text-white"
+          style={{ backgroundColor: 'var(--primary-color)' }}
+        >
           🏆 Best Value
         </div>
       )}
 
-      <div className="p-6 md:p-8">
-        {/* Plan Name and Duration */}
-        <div className="mb-4">
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+      <div className="p-5 md:p-6 flex flex-col h-full">
+        {/* Header: Plan Name + Duration + Price */}
+        <div className="mb-6 pb-4 border-b" style={{ borderColor: 'var(--border-light)' }}>
+          <h3 className="text-xl md:text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
             {plan.name}
           </h3>
-          <div className="inline-block px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium">
-            {formatDuration(plan.duration_minutes)}
-          </div>
-        </div>
-
-        {/* Price */}
-        <div className="my-8 pb-8 border-b-2 border-gray-100 dark:border-slate-700">
-          <div className="flex items-baseline gap-2">
-            <span className="text-5xl font-bold text-gray-900 dark:text-white">
-              {typeof plan.price === 'number' ? plan.price.toLocaleString() : plan.price}
+          <div className="flex items-center justify-between">
+            <span
+              className="text-xs md:text-sm font-semibold px-2 py-1 rounded-lg"
+              style={{
+                backgroundColor: 'var(--primary-light)',
+                color: 'var(--primary-dark)',
+              }}
+            >
+              {formatDuration(plan.duration_minutes)}
             </span>
-            <span className="text-gray-600 dark:text-gray-400 font-semibold text-lg">
-              {plan.currency || 'UGX'}
-            </span>
-          </div>
-        </div>
-
-        {/* Features */}
-        <div className="mb-8 space-y-3">
-          {getFeatures().map((feature, idx) => (
-            <div key={idx} className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-green-500 dark:text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="text-gray-700 dark:text-gray-300 text-sm font-medium">
-                {feature}
-              </span>
+            <div className="text-right">
+              <div className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                {typeof plan.price === 'number' ? plan.price.toLocaleString() : plan.price}
+              </div>
+              <div className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                {plan.currency || 'UGX'}
+              </div>
             </div>
+          </div>
+        </div>
+
+        {/* Plan Summary - Multi-line text */}
+        <div className="mb-6 text-center">
+          <p
+            className="text-sm md:text-base font-semibold leading-relaxed whitespace-pre-line"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {getPlanSummary()}
+          </p>
+        </div>
+
+        {/* Feature Icons - Compact with Hover Tooltips */}
+        <div className="mb-6 flex justify-around px-2">
+          {getFeatureIcons().map((feature, idx) => (
+            <FeatureIcon key={idx} {...feature} />
           ))}
         </div>
 
         {/* CTA Button */}
         <button
           onClick={() => onSelect(plan)}
-          className={`w-full py-3 px-4 rounded-xl font-bold transition-all duration-200 text-center ${
-            isPopular
-              ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-blue-400 dark:to-blue-500 dark:hover:from-blue-500 dark:hover:to-blue-600 text-white shadow-md hover:shadow-lg active:scale-95'
-              : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-900 dark:text-white border border-gray-200 dark:border-slate-600 active:scale-95'
-          }`}
+          className="w-full py-3 px-4 rounded-xl font-bold transition-all duration-200 text-center mt-auto text-white"
+          style={{
+            backgroundColor: isPopular ? 'var(--primary-color)' : 'var(--bg-tertiary)',
+            color: isPopular ? 'white' : 'var(--text-primary)',
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.filter = 'brightness(1.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.filter = 'brightness(1)';
+          }}
         >
           Get {plan.name} Access
         </button>
@@ -119,23 +170,10 @@ export function PortalContent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sessionTime, setSessionTime] = useState('');
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
-    // Detect system dark mode preference
-    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setIsDarkMode(isDark);
-
-    // Update the HTML element
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
     fetchData();
     const timer = setInterval(updateSessionTime, 1000);
-
     return () => clearInterval(timer);
   }, []);
 
@@ -191,38 +229,39 @@ export function PortalContent() {
     setSelectedPlan(null);
   };
 
-  const popularPlanId = plans.find(p => p.name === 'Monthly')?.id;
+  const popularPlanId = plans.find(p => p.name === '12 Hours')?.id || plans.find(p => p.name === 'Monthly')?.id;
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      isDarkMode
-        ? 'dark bg-slate-950'
-        : 'bg-gradient-to-br from-slate-50 to-slate-100'
-    }`}>
+    <div style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }} className="min-h-screen transition-colors duration-300">
       {/* Header */}
-      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${
-        isDarkMode
-          ? 'dark bg-slate-900/80 border-slate-800'
-          : 'bg-white/80 border-slate-200'
-      }`}>
+      <header
+        className="sticky top-0 z-40 backdrop-blur-md border-b transition-colors"
+        style={{
+          backgroundColor: 'rgba(var(--bg-secondary), 0.8)',
+          borderColor: 'var(--border-light)',
+        }}
+      >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                isDarkMode ? 'dark bg-blue-900/30' : 'bg-blue-100'
-              }`}>
-                <svg className="w-6 h-6 text-blue-500 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{
+                  backgroundColor: 'var(--primary-light)',
+                }}
+              >
+                <svg className="w-6 h-6" style={{ color: 'var(--primary-color)' }} fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M17.778 8.222c-4.296-4.296-11.26-4.296-15.556 0A1 1 0 01.808 6.808c4.296-4.295 11.26-4.295 15.556 0a1 1 0 01-1.414 1.414zM14.95 11.05a7 7 0 00-9.9 0 1 1 0 01-1.414-1.414 9 9 0 0112.728 0 1 1 0 01-1.414 1.414zM12.12 13.88a3 3 0 00-4.242 0 1 1 0 01-1.415-1.415 5 5 0 017.072 0 1 1 0 01-1.415 1.415zM9 16a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Xhenfy WiFi</h1>
-                <p className={`text-xs font-medium ${isDarkMode ? 'dark text-gray-400' : 'text-gray-600'}`}>
+                <h1 className="text-2xl font-bold">Xhenfy WiFi</h1>
+                <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
                   Fast. Reliable. Secure.
                 </p>
               </div>
             </div>
-            <div className={`text-sm font-bold tabular-nums ${isDarkMode ? 'dark text-blue-300' : 'text-blue-600'}`}>
+            <div className="text-sm font-bold tabular-nums" style={{ color: 'var(--primary-color)' }}>
               {sessionTime}
             </div>
           </div>
@@ -233,16 +272,12 @@ export function PortalContent() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         {/* Hero Section */}
         <section className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight text-gray-900 dark:text-white">
-            <span className="bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 bg-clip-text text-transparent">
-              Stay Connected
-            </span>
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+            <span style={{ color: 'var(--primary-color)' }}>Stay Connected</span>
             <br />
-            <span className="text-gray-800 dark:text-gray-100">Choose Your Plan</span>
+            <span style={{ color: 'var(--text-primary)' }}>Choose Your Plan</span>
           </h2>
-          <p className={`text-lg md:text-xl max-w-2xl mx-auto ${
-            isDarkMode ? 'dark text-gray-300' : 'text-gray-700'
-          }`}>
+          <p className="text-lg md:text-xl max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
             Instant access with secure Mobile Money payment. No hidden fees, transparent pricing.
           </p>
         </section>
@@ -250,7 +285,7 @@ export function PortalContent() {
         {/* Loading State */}
         {loading && (
           <div className="flex justify-center items-center py-20">
-            <div className={`flex flex-col items-center gap-3 ${isDarkMode ? 'dark text-blue-400' : 'text-blue-500'}`}>
+            <div className="flex flex-col items-center gap-3" style={{ color: 'var(--primary-color)' }}>
               <svg className="w-8 h-8 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -262,7 +297,7 @@ export function PortalContent() {
 
         {/* Plans Grid */}
         {!loading && plans.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-16">
             {plans.map((plan) => (
               <PlanCard
                 key={plan.id}
@@ -277,85 +312,77 @@ export function PortalContent() {
         {/* Empty State */}
         {!loading && plans.length === 0 && (
           <div className="text-center py-12">
-            <svg className={`w-16 h-16 mx-auto mb-4 ${isDarkMode ? 'dark text-gray-600' : 'text-gray-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p className={`text-lg ${isDarkMode ? 'dark text-gray-400' : 'text-gray-600'}`}>
+            <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
               No plans available
             </p>
           </div>
         )}
 
         {/* Trust Section */}
-        <section className={`rounded-2xl p-8 md:p-12 border transition-colors ${
-          isDarkMode
-            ? 'dark bg-slate-800 border-slate-700'
-            : 'bg-white border-slate-200'
-        }`}>
-          <h3 className="text-2xl md:text-3xl font-bold mb-12 text-center text-gray-900 dark:text-white">
+        <section
+          className="rounded-2xl p-8 md:p-12 border transition-colors"
+          style={{
+            backgroundColor: 'var(--card-bg)',
+            borderColor: 'var(--card-border)',
+          }}
+        >
+          <h3 className="text-2xl md:text-3xl font-bold mb-12 text-center">
             Why Choose Xhenfy?
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
             {/* Trust Item 1 */}
             <div className="text-center">
-              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 ${
-                isDarkMode ? 'dark bg-green-900/30' : 'bg-green-100'
-              }`}>
-                <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+              <div
+                className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
+                style={{ backgroundColor: 'var(--accent-light)' }}
+              >
+                <svg className="w-8 h-8" style={{ color: 'var(--accent-color)' }} fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
               </div>
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Secure Payment</h4>
-              <p className={`text-sm ${isDarkMode ? 'dark text-gray-400' : 'text-gray-600'}`}>
+              <h4 className="font-semibold mb-2">Secure Payment</h4>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                 All payments encrypted with Mobile Money
               </p>
             </div>
 
             {/* Trust Item 2 */}
             <div className="text-center">
-              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 ${
-                isDarkMode ? 'dark bg-blue-900/30' : 'bg-blue-100'
-              }`}>
-                <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+              <div
+                className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
+                style={{ backgroundColor: 'var(--info-light)' }}
+              >
+                <svg className="w-8 h-8" style={{ color: 'var(--info-color)' }} fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
               </div>
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Instant Access</h4>
-              <p className={`text-sm ${isDarkMode ? 'dark text-gray-400' : 'text-gray-600'}`}>
+              <h4 className="font-semibold mb-2">Instant Access</h4>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                 Immediate activation after payment
               </p>
             </div>
 
             {/* Trust Item 3 */}
             <div className="text-center">
-              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 ${
-                isDarkMode ? 'dark bg-purple-900/30' : 'bg-purple-100'
-              }`}>
-                <svg className="w-8 h-8 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+              <div
+                className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
+                style={{ backgroundColor: 'var(--secondary-light)' }}
+              >
+                <svg className="w-8 h-8" style={{ color: 'var(--secondary-color)' }} fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
               </div>
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">24/7 Support</h4>
-              <p className={`text-sm ${isDarkMode ? 'dark text-gray-400' : 'text-gray-600'}`}>
+              <h4 className="font-semibold mb-2">24/7 Support</h4>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                 Always here to help when you need us
               </p>
             </div>
           </div>
         </section>
       </main>
-
-      {/* Footer */}
-      <footer className={`mt-20 border-t transition-colors ${
-        isDarkMode
-          ? 'dark border-slate-800 bg-slate-900/50'
-          : 'border-slate-200 bg-white/50'
-      }`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
-          <p className={`text-sm ${isDarkMode ? 'dark text-gray-500' : 'text-gray-600'}`}>
-            © 2026 Xhenfy WiFi Portal. Fast. Reliable. Secure.
-          </p>
-        </div>
-      </footer>
 
       {/* Modal */}
       {isModalOpen && selectedPlan && (
