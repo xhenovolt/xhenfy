@@ -35,8 +35,8 @@ async function seedDatabase() {
        ON CONFLICT DO NOTHING
        RETURNING id, name, price, currency;`,
       [
-        '1 Hour', 60, 300, 'UGX',
-        '3 Hours', 180, 400, 'UGX',
+        '1 Hour', 60, 500, 'UGX',
+        '3 Hours', 180, 500, 'UGX',
         '6 Hours', 360, 500, 'UGX',
         '12 Hours', 720, 700, 'UGX',
         'Daily', 1440, 1000, 'UGX',

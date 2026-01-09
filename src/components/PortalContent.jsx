@@ -20,8 +20,8 @@ const mockSession = {
 
 // Fallback plans if API fails
 const FALLBACK_PLANS = [
-  { id: 1, name: '1 Hour', price: '300', duration_minutes: 60 },
-  { id: 2, name: '3 Hours', price: '400', duration_minutes: 180 },
+  { id: 1, name: '1 Hour', price: '500', duration_minutes: 60 },
+  { id: 2, name: '3 Hours', price: '500', duration_minutes: 180 },
   { id: 3, name: '6 Hours', price: '500', duration_minutes: 360 },
   { id: 4, name: '12 Hours', price: '700', duration_minutes: 720 },
   { id: 5, name: 'Daily', price: '1000', duration_minutes: 1440 },

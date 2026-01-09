@@ -116,16 +116,24 @@ export async function POST(request) {
       console.log('API Key:', API_KEY.substring(0, 20) + '...');
 
       // Make request to MunoPay (same approach as test-munopay)
-      const response = await fetch(API_URL, {
+      const fetchOptions = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${API_KEY}`,
         },
         body: JSON.stringify(munoPayPayload),
-      });
+      };
+
+      // For development, allow self-signed certificates
+      if (process.env.NODE_ENV === 'development') {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      }
+
+      const response = await fetch(API_URL, fetchOptions);
 
       console.log('📍 MunoPay Response Status:', response.status);
+      console.log('📍 MunoPay Response Headers:', JSON.stringify(Object.fromEntries(response.headers)));
 
       // Parse response text first (same as test-munopay)
       const responseText = await response.text();
@@ -162,6 +170,7 @@ export async function POST(request) {
       // Log error but don't expose sensitive details to client
       console.error('❌ MunoPay request failed:', error.message);
       console.error('Error type:', error.name);
+      console.error('Error cause:', error.cause);
       console.error('Full error:', error.toString());
       
       return Response.json(
