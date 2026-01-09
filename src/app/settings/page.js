@@ -8,34 +8,37 @@ export const dynamic = 'force-dynamic';
 export default function SettingsPage() {
   const [settings, setSettings] = useState({});
   const [currency, setCurrency] = useState('UGX');
-  const [prices, setPrices] = useState({
-    daily: 1000,
-    weekly: 5000,
-    monthly: 18000,
-  });
+  const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetchSettings();
+    fetchData();
   }, []);
 
-  const fetchSettings = async () => {
+  const fetchData = async () => {
     try {
-      const response = await fetch('/api/settings');
-      const data = await response.json();
+      const [settingsRes, plansRes] = await Promise.all([
+        fetch('/api/settings').catch(() => ({ ok: false })),
+        fetch('/api/plans').catch(() => ({ ok: false })),
+      ]);
 
-      if (data.success) {
-        setSettings(data.data);
-        setCurrency(data.data.default_currency || 'UGX');
-        setPrices({
-          daily: parseInt(data.data.daily_price) || 1000,
-          weekly: parseInt(data.data.weekly_price) || 5000,
-          monthly: parseInt(data.data.monthly_price) || 18000,
-        });
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json();
+        if (settingsData.success && settingsData.data) {
+          setSettings(settingsData.data);
+          setCurrency(settingsData.data.default_currency || 'UGX');
+        }
+      }
+
+      if (plansRes.ok) {
+        const plansData = await plansRes.json();
+        if (plansData.success && plansData.data) {
+          setPlans(plansData.data);
+        }
       }
     } catch (error) {
-      console.error('Error fetching settings:', error);
+      console.error('Error fetching data:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -46,35 +49,58 @@ export default function SettingsPage() {
     }
   };
 
+  const handleUpdatePlan = (planId, field, value) => {
+    setPlans(
+      plans.map((plan) =>
+        plan.id === planId ? { ...plan, [field]: value } : plan
+      )
+    );
+  };
+
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
-      // Update all settings
-      const updates = [
-        { key: 'default_currency', value: currency },
-        { key: 'daily_price', value: prices.daily.toString() },
-        { key: 'weekly_price', value: prices.weekly.toString() },
-        { key: 'monthly_price', value: prices.monthly.toString() },
-      ];
-
-      for (const update of updates) {
+      // Save currency if changed
+      if (currency !== settings.default_currency) {
         const response = await fetch('/api/settings', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(update),
+          body: JSON.stringify({ key: 'default_currency', value: currency }),
         });
 
         if (!response.ok) {
-          throw new Error('Failed to update setting');
+          throw new Error('Failed to update currency');
+        }
+      }
+
+      // Save plan updates
+      for (const plan of plans) {
+        const response = await fetch(`/api/plans`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: plan.id,
+            name: plan.name,
+            price: plan.price,
+            duration_minutes: plan.duration_minutes,
+            currency: plan.currency,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to update plan: ${plan.name}`);
         }
       }
 
       Swal.fire({
         icon: 'success',
         title: 'Settings Updated',
-        text: 'All settings have been saved successfully',
+        text: 'All changes have been saved. Updates are live on the portal.',
         confirmButtonText: 'OK',
       });
+
+      // Refresh data to confirm saves
+      fetchData();
     } catch (error) {
       console.error('Error saving settings:', error);
       Swal.fire({
@@ -90,35 +116,58 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div
+        className="flex items-center justify-center min-h-screen transition-colors"
+        style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+      >
+        <div className="flex flex-col items-center gap-3" style={{ color: 'var(--primary-color)' }}>
+          <svg className="w-8 h-8 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
+          </svg>
+          <span className="font-medium">Loading settings...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4">
+    <div
+      className="min-h-screen p-4 transition-colors duration-300"
+      style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+    >
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-4xl font-bold text-white">Portal Settings</h1>
+            <h1 className="text-4xl font-bold">Portal Settings</h1>
             <a
               href="/"
-              className="text-blue-400 hover:text-blue-300 transition font-medium"
+              className="font-medium transition-colors hover:underline"
+              style={{ color: 'var(--primary-color)' }}
             >
               ← Back to Portal
             </a>
           </div>
-          <p className="text-gray-400">Manage pricing and portal settings</p>
+          <p style={{ color: 'var(--text-secondary)' }}>Manage pricing and portal configuration</p>
         </div>
 
         {/* Settings Card */}
-        <div className="bg-slate-800 rounded-xl shadow-2xl p-8 border border-slate-700">
+        <div
+          className="rounded-xl shadow-lg p-8 border transition-colors"
+          style={{
+            backgroundColor: 'var(--card-bg)',
+            borderColor: 'var(--card-border)',
+          }}
+        >
           {/* Currency Section */}
-          <div className="mb-8 pb-8 border-b border-slate-700">
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+          <div className="mb-8 pb-8" style={{ borderColor: 'var(--border-light)', borderBottomWidth: '1px' }}>
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--primary-color)' }}></span>
               Default Currency
             </h2>
             <div className="flex gap-4">
@@ -128,77 +177,105 @@ export default function SettingsPage() {
                 onChange={(e) => setCurrency(e.target.value.toUpperCase())}
                 placeholder="Currency code (e.g., UGX)"
                 maxLength="3"
-                className="px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-all"
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  borderColor: 'var(--border-light)',
+                  color: 'var(--text-primary)',
+                  '--tw-ring-color': 'var(--primary-color)',
+                }}
               />
-              <span className="text-gray-400 text-sm self-center">e.g., UGX, USD, KES</span>
+              <span className="text-sm self-center" style={{ color: 'var(--text-secondary)' }}>
+                e.g., UGX, USD, KES
+              </span>
             </div>
           </div>
 
           {/* Pricing Section */}
           <div className="mb-8">
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--primary-color)' }}></span>
               Plan Pricing
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Daily Plan */}
-              <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
-                <h3 className="text-white font-semibold mb-2">Daily Plan</h3>
-                <div className="flex items-end gap-2">
-                  <input
-                    type="number"
-                    value={prices.daily}
-                    onChange={(e) =>
-                      setPrices({ ...prices, daily: parseInt(e.target.value) || 0 })
-                    }
-                    min="0"
-                    className="flex-1 px-3 py-2 bg-slate-600 border border-slate-500 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-semibold"
-                  />
-                  <span className="text-gray-400 text-sm">{currency}</span>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {plans.length > 0 ? (
+                plans.map((plan) => (
+                  <div
+                    key={plan.id}
+                    className="rounded-lg p-6 border transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg-secondary)',
+                      borderColor: 'var(--border-light)',
+                    }}
+                  >
+                    <h3 className="font-semibold mb-4">{plan.name}</h3>
+                    <div className="space-y-4">
+                      {/* Duration */}
+                      <div>
+                        <label className="text-xs font-semibold mb-2 block" style={{ color: 'var(--text-secondary)' }}>
+                          Duration (minutes)
+                        </label>
+                        <input
+                          type="number"
+                          value={plan.duration_minutes}
+                          onChange={(e) =>
+                            handleUpdatePlan(plan.id, 'duration_minutes', parseInt(e.target.value) || 0)
+                          }
+                          min="0"
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-all"
+                          style={{
+                            backgroundColor: 'var(--bg-primary)',
+                            borderColor: 'var(--border-light)',
+                            color: 'var(--text-primary)',
+                            '--tw-ring-color': 'var(--primary-color)',
+                          }}
+                        />
+                      </div>
 
-              {/* Weekly Plan */}
-              <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
-                <h3 className="text-white font-semibold mb-2">Weekly Plan</h3>
-                <div className="flex items-end gap-2">
-                  <input
-                    type="number"
-                    value={prices.weekly}
-                    onChange={(e) =>
-                      setPrices({ ...prices, weekly: parseInt(e.target.value) || 0 })
-                    }
-                    min="0"
-                    className="flex-1 px-3 py-2 bg-slate-600 border border-slate-500 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-semibold"
-                  />
-                  <span className="text-gray-400 text-sm">{currency}</span>
+                      {/* Price */}
+                      <div>
+                        <label className="text-xs font-semibold mb-2 block" style={{ color: 'var(--text-secondary)' }}>
+                          Price ({currency})
+                        </label>
+                        <input
+                          type="number"
+                          value={plan.price}
+                          onChange={(e) =>
+                            handleUpdatePlan(plan.id, 'price', parseInt(e.target.value) || 0)
+                          }
+                          min="0"
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-all text-lg font-semibold"
+                          style={{
+                            backgroundColor: 'var(--bg-primary)',
+                            borderColor: 'var(--border-light)',
+                            color: 'var(--text-primary)',
+                            '--tw-ring-color': 'var(--primary-color)',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-8" style={{ color: 'var(--text-secondary)' }}>
+                  <p>No plans found. Please create plans first.</p>
                 </div>
-              </div>
-
-              {/* Monthly Plan */}
-              <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
-                <h3 className="text-white font-semibold mb-2">Monthly Plan</h3>
-                <div className="flex items-end gap-2">
-                  <input
-                    type="number"
-                    value={prices.monthly}
-                    onChange={(e) =>
-                      setPrices({ ...prices, monthly: parseInt(e.target.value) || 0 })
-                    }
-                    min="0"
-                    className="flex-1 px-3 py-2 bg-slate-600 border border-slate-500 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-semibold"
-                  />
-                  <span className="text-gray-400 text-sm">{currency}</span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
           {/* Info Box */}
-          <div className="bg-blue-900 bg-opacity-30 border border-blue-700 border-opacity-50 rounded-lg p-4 mb-8">
-            <p className="text-blue-200 text-sm">
-              💡 Changes made here will be reflected immediately on the captive portal. Make sure to set correct prices before users access the portal.
+          <div
+            className="rounded-lg p-4 mb-8 border transition-colors"
+            style={{
+              backgroundColor: 'var(--info-light)',
+              borderColor: 'var(--info-color)',
+              color: 'var(--info-color)',
+            }}
+          >
+            <p className="text-sm font-medium">
+              💡 Changes made here are saved to the database and reflected immediately on the captive portal. All users will see updated pricing.
             </p>
           </div>
 
@@ -207,7 +284,10 @@ export default function SettingsPage() {
             <button
               onClick={handleSaveSettings}
               disabled={saving}
-              className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-6 py-3 font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-white"
+              style={{
+                backgroundColor: saving ? 'var(--primary-light)' : 'var(--primary-color)',
+              }}
             >
               {saving ? (
                 <>
@@ -217,14 +297,19 @@ export default function SettingsPage() {
               ) : (
                 <>
                   <span>💾</span>
-                  Save Settings
+                  Save Changes
                 </>
               )}
             </button>
             <button
-              onClick={fetchSettings}
+              onClick={fetchData}
               disabled={saving}
-              className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed border"
+              style={{
+                backgroundColor: 'var(--bg-secondary)',
+                borderColor: 'var(--border-light)',
+                color: 'var(--text-primary)',
+              }}
             >
               Reset
             </button>
@@ -232,7 +317,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Footer */}
-        <div className="mt-8 text-center text-gray-500 text-sm">
+        <div className="mt-8 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
           <p>Portal Settings Management • Last updated: {new Date().toLocaleString()}</p>
         </div>
       </div>

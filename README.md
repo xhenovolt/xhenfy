@@ -57,12 +57,195 @@ npm run dev
 
 **Visit:** http://localhost:3000
 
+## 🎨 Color Palette System
+
+All colors are now managed through **CSS custom properties** in `src/app/globals.css` for seamless light/dark mode support. This centralized system ensures consistency across the entire application.
+
+### Primary Colors
+
+```css
+/* Light Mode (default) */
+--primary-color: #0ea5e9      /* Sky Blue - Primary actions */
+--primary-light: #e0f2fe      /* Light Sky Blue - Backgrounds */
+--primary-dark: #0369a1       /* Dark Sky Blue - Text on light backgrounds */
+
+/* Dark Mode (auto-activated by @media prefers-color-scheme: dark) */
+--primary-color: #0ea5e9      /* Remains consistent across modes */
+--primary-light: #0369a1      /* Adapted for dark backgrounds */
+--primary-dark: #e0f2fe       /* Adapted for dark text */
+```
+
+### Secondary Colors (Purple/Accent)
+
+```css
+--secondary-color: #a855f7    /* Purple */
+--secondary-light: #f3e8ff    /* Light Purple */
+--secondary-dark: #7e22ce     /* Dark Purple */
+```
+
+### Accent Colors (Green/Success)
+
+```css
+--accent-color: #10b981       /* Green */
+--accent-light: #d1fae5       /* Light Green */
+--accent-dark: #059669        /* Dark Green */
+```
+
+### Semantic Colors
+
+**Info (Blue)**
+```css
+--info-color: #3b82f6         /* Informational messages */
+--info-light: #dbeafe        /* Light info backgrounds */
+--info-dark: #1d4ed8         /* Dark info text */
+```
+
+**Warning (Orange)**
+```css
+--warning-color: #f59e0b      /* Warning messages */
+--warning-light: #fef3c7      /* Light warning backgrounds */
+--warning-dark: #d97706       /* Dark warning text */
+```
+
+**Danger (Red)**
+```css
+--danger-color: #ef4444       /* Error/dangerous actions */
+--danger-light: #fee2e2       /* Light danger backgrounds */
+--danger-dark: #dc2626        /* Dark danger text */
+```
+
+### Background Colors
+
+```css
+/* Light Mode */
+--bg-primary: #ffffff         /* Main background */
+--bg-secondary: #f8f9fa       /* Subtle background */
+--bg-tertiary: #f0f1f3        /* Tertiary background */
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+  --bg-primary: #121212       /* Dark main background */
+  --bg-secondary: #1e1e1e     /* Dark subtle background */
+  --bg-tertiary: #2a2a2a      /* Dark tertiary background */
+}
+```
+
+### Text Colors
+
+```css
+/* Light Mode */
+--text-primary: #1f2937       /* Main text */
+--text-secondary: #6b7280     /* Secondary text */
+--text-tertiary: #9ca3af      /* Tertiary/disabled text */
+--text-inverse: #ffffff       /* Text on dark backgrounds */
+
+/* Dark Mode - Auto-applied */
+--text-primary: #ffffff       /* White text on dark */
+--text-secondary: #d1d5db     /* Light gray for secondary */
+--text-tertiary: #9ca3af      /* Gray for tertiary */
+--text-inverse: #1f2937       /* Dark text on light backgrounds */
+```
+
+### Border Colors
+
+```css
+/* Light Mode */
+--border-light: #e5e7eb       /* Light borders */
+--border-medium: #d1d5db      /* Medium borders */
+--border-dark: #9ca3af        /* Dark borders */
+
+/* Dark Mode */
+--border-light: #374151       /* Light borders in dark mode */
+--border-medium: #4b5563      /* Medium borders in dark mode */
+--border-dark: #6b7280        /* Dark borders in dark mode */
+```
+
+### Card Styling
+
+```css
+/* Light Mode */
+--card-bg: #ffffff            /* Card background */
+--card-border: #e5e7eb        /* Card border */
+--card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1)    /* Card shadow */
+--card-shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.1) /* Hover shadow */
+
+/* Dark Mode */
+--card-bg: #1e1e1e            /* Dark card background */
+--card-border: #374151        /* Dark card border */
+--card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3)    /* Dark shadow */
+--card-shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.3) /* Dark hover shadow */
+```
+
+### Spacing & Transitions
+
+```css
+--spacing-xs: 0.25rem         /* 4px */
+--spacing-sm: 0.5rem          /* 8px */
+--spacing-md: 1rem            /* 16px */
+--spacing-lg: 1.5rem          /* 24px */
+--spacing-xl: 2rem            /* 32px */
+
+--transition-fast: 150ms      /* Quick transitions */
+--transition-normal: 300ms    /* Standard transitions */
+--transition-slow: 500ms      /* Slow transitions */
+```
+
+### Usage Examples
+
+**Basic Usage:**
+```jsx
+// Component
+<div style={{ color: 'var(--text-primary)', backgroundColor: 'var(--card-bg)' }}>
+  Content here
+</div>
+```
+
+**With Hover Effects:**
+```jsx
+<button
+  style={{
+    backgroundColor: 'var(--primary-color)',
+    color: 'white',
+    transition: `all var(--transition-normal)`,
+  }}
+  onMouseEnter={(e) => e.target.style.filter = 'brightness(1.1)'}
+  onMouseLeave={(e) => e.target.style.filter = 'brightness(1)'}
+>
+  Click Me
+</button>
+```
+
+**Responsive to Dark Mode:**
+```jsx
+// No need for dark: prefix in Tailwind!
+// The CSS variables automatically adapt based on prefers-color-scheme
+<div style={{
+  backgroundColor: 'var(--bg-primary)',  // White in light mode, #121212 in dark
+  color: 'var(--text-primary)',           // Dark text in light mode, white in dark
+}}>
+  This adapts automatically!
+</div>
+```
+
+### Integration Notes
+
+- All colors are defined in `src/app/globals.css`
+- Colors automatically switch based on system preference (`prefers-color-scheme`)
+- Components use inline `style` with `var()` instead of hardcoded Tailwind classes
+- No need for `dark:` prefix in component classes anymore
+- Consistent across all pages: Portal, Settings, and any future pages
+
+### File Reference
+
+- **Color Definitions:** [src/app/globals.css](src/app/globals.css)
+- **Portal Component:** [src/components/PortalContent.jsx](src/components/PortalContent.jsx)
+- **Settings Page:** [src/app/settings/page.js](src/app/settings/page.js)
+- **Footer Component:** [src/components/Footer.jsx](src/components/Footer.jsx)
+
 ## 📚 Documentation
 
 - **[QUICKSTART.md](QUICKSTART.md)** - 5-minute setup guide with testing steps
 - **[DOCUMENTATION.md](DOCUMENTATION.md)** - Complete technical documentation
-
-## 🏗️ Architecture
 
 ```
 Xhenfy Portal
